@@ -1,8 +1,13 @@
 package tink.core.types;
 
+/**
+ * ...
+ * @author back2dos
+ */
+
 enum Outcome<Data, Failure> {
 	Success(data:Data);
-	Failure(failure:Failure);
+	Failure(?failure:Failure);
 }
 interface ThrowableFailure {
 	function throwSelf():Dynamic;
@@ -20,6 +25,20 @@ class OutcomeTools {
 					}
 					else
 						throw failure;
+			}
+	}
+	static public function sureFailure < D, F > (outcome:Outcome < D, F > ):F {
+		return
+			switch (outcome) {
+				case Success(data): 
+					if (Std.is(data, ThrowableFailure)) {
+						var data:ThrowableFailure = cast data;//TODO: simplify this once haXe cast work correctly again
+						data.throwSelf();
+					}
+					else
+						throw data;
+				case Failure(failure): 
+					failure;
 			}
 	}
 	static public function toOption < D, F > (outcome:Outcome < D, F > ) {
@@ -56,7 +75,14 @@ class OutcomeTools {
 		return 
 			switch (outcome) {
 				case Success(data): data == to;
-				case Failure(_): false;
+				case Failure(failure): false;
+			}
+	}
+	static public inline function failureEquals < D, F > (outcome:Outcome < D, F > , to: F):Bool {
+		return 
+			switch (outcome) {
+				case Success(_): false;
+				case Failure(data): data == to;
 			}
 	}
 	static public inline function map < A, B, F > (outcome: Outcome < A, F > , transform: A->B) {
